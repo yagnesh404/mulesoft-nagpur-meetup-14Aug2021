@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="batch-us-2Flow" doc:id="e0a87a82-0aec-4588-a412-151fbcb78f80" >
+		<http:listener doc:name="Listener" doc:id="4a835e2f-840a-4c12-9545-5e063fa61329" config-ref="HTTP_Listener_config" path="/batch-us-2"/>
+		<logger level="INFO" doc:name="MULE_HOME" doc:id="e8f4ae2d-1357-47c8-8f5b-4981018adc66" message="#[mule.home]" category="MULE_HOME"/>
+		<file:read doc:name="Read" doc:id="1e88763a-3173-41d2-997c-784634c8b5fe" config-ref="File_Config" path="C:\Work\m4-ws\batch-us-1\src\main\resources\files\username.csv" outputMimeType="application/csv; header=true"/>
+		<ee:transform doc:name="Payload as JSON" doc:id="cf97fe61-8fe3-4709-a1a0-40a8ca8196fc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#['abcd']" doc:name="beforeBatch" doc:id="a471333f-4e6e-4eb4-8b81-d706ca4a1929" variableName="beforeBatch"/>
+		<batch:job jobName="batch-us-2-Batch_Job" doc:id="0414cfef-7447-4046-8aec-e90253157122" maxFailedRecords="-1" jobInstanceId="#['Job From ' ++ now() as String {format: 'dd/MM/yy hh:mm:ss'}]" target="targetVar">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="b94e3aa3-04e6-4ab8-91aa-8e69e6c4c23b" >
+					<logger level="INFO" doc:name="Log reocord" doc:id="8ac99e2a-2ba4-46ff-b6b6-adf8bbf3bd41" message="#[payload.Username]" category="Print-Record-prop"/>
+					<logger level="INFO" doc:name="variable beforeBatch-inside-batch" doc:id="aa14656c-e123-47d5-b31f-fc8057ce9d2d" message="#[vars.beforeBatch]" category="beforeBatch-inside-batch"/>
+					<set-variable value="#['efgh']" doc:name="Set Variable - record level" doc:id="54486926-0d34-410f-a2b7-482efde441da" variableName="beforeBatch"/>
+					<logger level="INFO" doc:name="Log variable" doc:id="b42d4e0c-bfec-42cc-a96e-ea6f69e7d1d6" message="#[vars.beforeBatch]" category="record-var"/>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="001378a4-faf3-4458-8d8f-8e13e5371509" streaming="true">
+						<logger level="INFO" doc:name="Log variable" doc:id="74ac3e1f-3ce2-44b4-a679-cda9cb626aac" message="#[vars.beforeBatch]" category="variable-inside-aggregator"/>
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step1" doc:id="1fdd4d56-fc58-40d0-a560-31009dfcd273" >
+					<logger level="INFO" doc:name="Logger" doc:id="a2359c30-5b1d-4d20-b41a-da14d4191de0" message="#[vars.beforeBatch]" category="record-var"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Log beforeBatch" doc:id="5049a2ee-6905-4934-bd3a-6f4e9cce5ddd" message="#[vars.beforeBatch]" category="beforBatch-var-inside-onComplete"/>
+				<ee:transform doc:name="payload as json" doc:id="06faf4a7-60bd-4c79-9206-7e17f01e7942" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="on-complete-payload" doc:id="593749df-838c-4cfe-af15-f4c8706b07dd" message="#[payload]" category="on-complete-payload"/>
+			</batch:on-complete>
+		</batch:job>
+		<logger level="INFO" doc:name="Logger" doc:id="68587080-1973-42c0-8165-9683449ad8b9" message="#[vars.beforeBatch]" category="beforeBatch-after-batch-scope"/>
+		<logger level="INFO" doc:name="Log output of Batch Job Scope" doc:id="19ed9d6e-9577-4e75-a64a-372a95a9f097" message="#[%dw 2.0&#10;output json&#10;---&#10;vars.targetVar]" category="output of Batch Job Scope"/>
+	</flow>
+</mule>
